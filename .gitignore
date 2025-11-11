@@ -37,3 +37,6 @@ override.tf.json
 terraform.rc
 .venv/
 *.env
+
+# Claude Code configuration
+.claude/
