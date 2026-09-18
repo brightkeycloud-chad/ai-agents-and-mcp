@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AWS Cost Report - Q1 2026 (Jan-Mar)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body { font-family: -apple-system, Segoe UI, Helvetica, Arial, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; color: #232f3e; }
+  h1 { color: #232f3e; border-bottom: 3px solid #ff9900; padding-bottom: .5rem; }
+  h2 { color: #232f3e; margin-top: 2.5rem; border-left: 4px solid #ff9900; padding-left: .75rem; }
+  .summary { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0 2rem; }
+  .card { flex: 1 1 200px; background: #f4f6f8; border-radius: 8px; padding: 1rem; border-left: 4px solid #ff9900; }
+  .card .label { font-size: .85rem; color: #545b64; text-transform: uppercase; }
+  .card .value { font-size: 1.6rem; font-weight: 700; margin-top: .25rem; }
+  .chart-wrap { background: #fff; padding: 1rem; border: 1px solid #e0e4e8; border-radius: 8px; margin: 1rem 0; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { padding: .5rem .75rem; text-align: left; border-bottom: 1px solid #e0e4e8; }
+  th { background: #232f3e; color: #fff; font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:nth-child(even) { background: #f9fafb; }
+  .note { font-size: .85rem; color: #6c757d; font-style: italic; }
+</style>
+</head>
+<body>
+
+<h1>AWS Cost Report — Q1 2026</h1>
+<p class="note">Period: 2026-01-01 to 2026-03-31 (complete months) · Metric: UnblendedCost · Source: AWS Cost Explorer MCP · Generated: 2026-04-06</p>
+
+<div class="summary">
+  <div class="card"><div class="label">Q1 Total Spend</div><div class="value">$392.20</div></div>
+  <div class="card"><div class="label">Monthly Average</div><div class="value">$130.73</div></div>
+  <div class="card"><div class="label">Peak Month</div><div class="value">Feb · $188.48</div></div>
+  <div class="card"><div class="label">Lowest Month</div><div class="value">Mar · $90.90</div></div>
+</div>
+
+<h2>Monthly Total Spend</h2>
+<div class="chart-wrap"><canvas id="totalChart" height="100"></canvas></div>
+
+<h2>Top 10 Services by Q1 Spend</h2>
+<div class="chart-wrap"><canvas id="topChart" height="120"></canvas></div>
+<table>
+  <thead><tr><th>#</th><th>Service</th><th class="num">Jan</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Q1 Total</th><th class="num">% of Total</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Kiro</td><td class="num">$26.48</td><td class="num">$40.00</td><td class="num">$40.00</td><td class="num"><b>$106.48</b></td><td class="num">27.1%</td></tr>
+    <tr><td>2</td><td>Amazon Registrar</td><td class="num">$0.00</td><td class="num">$68.00</td><td class="num">$15.00</td><td class="num"><b>$83.00</b></td><td class="num">21.2%</td></tr>
+    <tr><td>3</td><td>AWS Skill Builder Individual</td><td class="num">$29.00</td><td class="num">$29.00</td><td class="num">$0.00</td><td class="num"><b>$58.00</b></td><td class="num">14.8%</td></tr>
+    <tr><td>4</td><td>AWS Security Hub</td><td class="num">$19.51</td><td class="num">$14.18</td><td class="num">$10.70</td><td class="num"><b>$44.39</b></td><td class="num">11.3%</td></tr>
+    <tr><td>5</td><td>Amazon Route 53</td><td class="num">$9.64</td><td class="num">$10.06</td><td class="num">$9.65</td><td class="num"><b>$29.35</b></td><td class="num">7.5%</td></tr>
+    <tr><td>6</td><td>AWS CloudTrail</td><td class="num">$3.26</td><td class="num">$4.82</td><td class="num">$3.54</td><td class="num"><b>$11.62</b></td><td class="num">3.0%</td></tr>
+    <tr><td>7</td><td>Amazon Macie</td><td class="num">$4.35</td><td class="num">$2.78</td><td class="num">$1.74</td><td class="num"><b>$8.87</b></td><td class="num">2.3%</td></tr>
+    <tr><td>8</td><td>AWS Config</td><td class="num">$3.28</td><td class="num">$4.56</td><td class="num">$0.78</td><td class="num"><b>$8.62</b></td><td class="num">2.2%</td></tr>
+    <tr><td>9</td><td>Amazon CloudWatch</td><td class="num">$4.89</td><td class="num">$2.57</td><td class="num">$0.32</td><td class="num"><b>$7.78</b></td><td class="num">2.0%</td></tr>
+    <tr><td>10</td><td>Amazon S3</td><td class="num">$2.19</td><td class="num">$2.04</td><td class="num">$1.76</td><td class="num"><b>$5.99</b></td><td class="num">1.5%</td></tr>
+  </tbody>
+</table>
+<p class="note">Top 10 services account for ~92.9% of total Q1 spend.</p>
+
+<h2>Biggest Month-over-Month Variations</h2>
+<p>Services ranked by spend volatility (max - min across Jan/Feb/Mar). These are the services driving the largest swings in your monthly bill.</p>
+<div class="chart-wrap"><canvas id="varChart" height="120"></canvas></div>
+<table>
+  <thead><tr><th>Service</th><th class="num">Jan</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Range</th><th>Trend</th></tr></thead>
+  <tbody>
+    <tr><td>Amazon Registrar</td><td class="num">$0.00</td><td class="num">$68.00</td><td class="num">$15.00</td><td class="num"><b>$68.00</b></td><td>Spike (Feb domain renewals)</td></tr>
+    <tr><td>AWS Skill Builder Individual</td><td class="num">$29.00</td><td class="num">$29.00</td><td class="num">$0.00</td><td class="num"><b>$29.00</b></td><td>Cancelled in Mar</td></tr>
+    <tr><td>Kiro</td><td class="num">$26.48</td><td class="num">$40.00</td><td class="num">$40.00</td><td class="num"><b>$13.52</b></td><td>Stepped up to plan rate</td></tr>
+    <tr><td>AWS Security Hub</td><td class="num">$19.51</td><td class="num">$14.18</td><td class="num">$10.70</td><td class="num"><b>$8.81</b></td><td>Steadily declining</td></tr>
+    <tr><td>Amazon CloudWatch</td><td class="num">$4.89</td><td class="num">$2.57</td><td class="num">$0.32</td><td class="num"><b>$4.57</b></td><td>Sharp decline</td></tr>
+    <tr><td>AWS Config</td><td class="num">$3.28</td><td class="num">$4.56</td><td class="num">$0.78</td><td class="num"><b>$3.78</b></td><td>Dropped in Mar</td></tr>
+    <tr><td>Amazon Macie</td><td class="num">$4.35</td><td class="num">$2.78</td><td class="num">$1.74</td><td class="num"><b>$2.61</b></td><td>Declining</td></tr>
+    <tr><td>AWS CloudTrail</td><td class="num">$3.26</td><td class="num">$4.82</td><td class="num">$3.54</td><td class="num"><b>$1.56</b></td><td>Feb spike</td></tr>
+  </tbody>
+</table>
+
+<h2>Consistent / Recurring Charges</h2>
+<p>Services that appear every month with low variance — these represent your "fixed cost" baseline.</p>
+<div class="chart-wrap"><canvas id="recurringChart" height="120"></canvas></div>
+<table>
+  <thead><tr><th>Service</th><th class="num">Jan</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Avg/Month</th><th class="num">Variance</th></tr></thead>
+  <tbody>
+    <tr><td>Kiro (subscription)</td><td class="num">$26.48</td><td class="num">$40.00</td><td class="num">$40.00</td><td class="num">$35.49</td><td class="num">Low (post-Jan)</td></tr>
+    <tr><td>Amazon Route 53</td><td class="num">$9.64</td><td class="num">$10.06</td><td class="num">$9.65</td><td class="num">$9.78</td><td class="num">Very Low</td></tr>
+    <tr><td>AWS Secrets Manager</td><td class="num">$2.00</td><td class="num">$1.80</td><td class="num">$1.60</td><td class="num">$1.80</td><td class="num">Very Low</td></tr>
+    <tr><td>Amazon S3</td><td class="num">$2.19</td><td class="num">$2.04</td><td class="num">$1.76</td><td class="num">$2.00</td><td class="num">Very Low</td></tr>
+    <tr><td>Amazon SQS</td><td class="num">$2.06</td><td class="num">$1.61</td><td class="num">$1.85</td><td class="num">$1.84</td><td class="num">Very Low</td></tr>
+    <tr><td>Amazon GuardDuty</td><td class="num">$1.05</td><td class="num">$1.05</td><td class="num">$1.16</td><td class="num">$1.09</td><td class="num">Very Low</td></tr>
+    <tr><td>AWS Cost Explorer</td><td class="num">$0.98</td><td class="num">$0.99</td><td class="num">$0.96</td><td class="num">$0.98</td><td class="num">Very Low</td></tr>
+    <tr><td>Amazon RDS</td><td class="num">$0.24</td><td class="num">$0.21</td><td class="num">$0.21</td><td class="num">$0.22</td><td class="num">Very Low</td></tr>
+    <tr><td>CloudWatch Events</td><td class="num">$0.13</td><td class="num">$0.12</td><td class="num">$0.12</td><td class="num">$0.12</td><td class="num">Very Low</td></tr>
+    <tr><td>Amazon EFS</td><td class="num">$0.01</td><td class="num">$0.01</td><td class="num">$0.01</td><td class="num">$0.01</td><td class="num">Very Low</td></tr>
+  </tbody>
+</table>
+<p class="note"><b>Recurring baseline (excluding Kiro):</b> ~$17.93/month in stable AWS infrastructure costs.</p>
+
+<h2>Key Observations</h2>
+<ul>
+  <li><b>Subscription-style spend dominates:</b> Kiro, Registrar, and Skill Builder make up ~63% of Q1 — these are non-AWS-infrastructure line items.</li>
+  <li><b>Security tooling is shrinking:</b> Security Hub, Macie, Config, GuardDuty all trended downward — likely scope reduction or sample-data cleanup.</li>
+  <li><b>February anomaly:</b> $188 peak driven entirely by the $68 Registrar charge (annual domain renewals).</li>
+  <li><b>True AWS infrastructure baseline:</b> ~$18-20/month after stripping subscriptions — Route 53 is the largest fixed item.</li>
+  <li><b>Cost optimization opportunities:</b> Security Hub at $44 over Q1 is the largest reducible AWS service — consider reviewing enabled standards/controls.</li>
+</ul>
+
+<script>
+const fmt = (v) => '$' + v.toFixed(2);
+const aws = { orange: '#ff9900', navy: '#232f3e', blue: '#146eb4', teal: '#1b9e9e', red: '#d13212', green: '#7aa116', purple: '#8b5fbf', gray: '#879596', yellow: '#e0c000', pink: '#e85d75' };
+
+new Chart(document.getElementById('totalChart'), {
+  type: 'bar',
+  data: {
+    labels: ['January 2026', 'February 2026', 'March 2026'],
+    datasets: [{ label: 'Total Spend (USD)', data: [112.82, 188.48, 90.90], backgroundColor: [aws.blue, aws.orange, aws.teal] }]
+  },
+  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v } } } }
+});
+
+new Chart(document.getElementById('topChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Kiro','Amazon Registrar','Skill Builder','Security Hub','Route 53','CloudTrail','Macie','Config','CloudWatch','S3'],
+    datasets: [{ label: 'Q1 Total (USD)', data: [106.48, 83.00, 58.00, 44.39, 29.35, 11.62, 8.87, 8.62, 7.78, 5.99],
+      backgroundColor: [aws.orange, aws.navy, aws.blue, aws.red, aws.teal, aws.green, aws.purple, aws.yellow, aws.pink, aws.gray] }]
+  },
+  options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { callback: v => '$' + v } } } }
+});
+
+new Chart(document.getElementById('varChart'), {
+  type: 'line',
+  data: {
+    labels: ['January', 'February', 'March'],
+    datasets: [
+      { label: 'Amazon Registrar', data: [0, 68, 15], borderColor: aws.navy, backgroundColor: aws.navy, tension: 0.3 },
+      { label: 'Skill Builder', data: [29, 29, 0], borderColor: aws.blue, backgroundColor: aws.blue, tension: 0.3 },
+      { label: 'Kiro', data: [26.48, 40, 40], borderColor: aws.orange, backgroundColor: aws.orange, tension: 0.3 },
+      { label: 'Security Hub', data: [19.51, 14.18, 10.70], borderColor: aws.red, backgroundColor: aws.red, tension: 0.3 },
+      { label: 'CloudWatch', data: [4.89, 2.57, 0.32], borderColor: aws.teal, backgroundColor: aws.teal, tension: 0.3 },
+      { label: 'AWS Config', data: [3.28, 4.56, 0.78], borderColor: aws.purple, backgroundColor: aws.purple, tension: 0.3 }
+    ]
+  },
+  options: { scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v } } } }
+});
+
+new Chart(document.getElementById('recurringChart'), {
+  type: 'line',
+  data: {
+    labels: ['January', 'February', 'March'],
+    datasets: [
+      { label: 'Route 53', data: [9.64, 10.06, 9.65], borderColor: aws.teal, backgroundColor: aws.teal, tension: 0.2 },
+      { label: 'Secrets Manager', data: [2.00, 1.80, 1.60], borderColor: aws.orange, backgroundColor: aws.orange, tension: 0.2 },
+      { label: 'S3', data: [2.19, 2.04, 1.76], borderColor: aws.blue, backgroundColor: aws.blue, tension: 0.2 },
+      { label: 'SQS', data: [2.06, 1.61, 1.85], borderColor: aws.green, backgroundColor: aws.green, tension: 0.2 },
+      { label: 'GuardDuty', data: [1.05, 1.05, 1.16], borderColor: aws.red, backgroundColor: aws.red, tension: 0.2 },
+      { label: 'Cost Explorer', data: [0.98, 0.99, 0.96], borderColor: aws.purple, backgroundColor: aws.purple, tension: 0.2 },
+      { label: 'RDS', data: [0.24, 0.21, 0.21], borderColor: aws.gray, backgroundColor: aws.gray, tension: 0.2 }
+    ]
+  },
+  options: { scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v } } } }
+});
+</script>
+</body>
+</html>

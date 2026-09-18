@@ -1,5 +1,0 @@
-Design an AWS three-tier architecture that consists of the following:
-1) a layer 7 load balancer with a secure listener
-2) application runtime using node.js in auto-scaled Docker containers
-3) a highly available postgres database
-Use cloud-native architecture principles, and when finished, generate a visualization using the aws official icon set and using the aws diagram mcp. The diagram should be detailed, showing all resources and relationships. Ensure that icon labels do not overlap, and if there is a VPC in the solution, show all vpc resources with appropriate layering.
