@@ -54,31 +54,67 @@ setting in somebody's editor.
 **If the generation goes sideways:** `code-reviewer.md` in this directory is a
 known-good copy. Copy it to `.claude/agents/` and carry on.
 
-### 4. Review the pull request with it — 6 min
+### 4. Start both reviews — 2 min
 
-Ask Claude Code to review PR #1 using the subagent. It reaches the pull request
-through the GitHub MCP.
+**Run them at the same time.** Neither is instant, and waiting for one before
+starting the other spends minutes you do not have.
 
-Expect it to find, from the diff: PartiQL built by string formatting, no error
-handling on the write, a hand-rolled regex where `validators.py` already has
-one, `boto3` imported into a route module, and a raw dict returned instead of a
-model.
+Ask Claude Code to review PR #1 with the subagent. It reaches the pull request
+through the GitHub MCP. The subagent itself has only Read, Grep and Glob, so it
+cannot fetch the diff — the main thread hands it over. Say that out loud; it is
+the scoping made visible.
 
-And expect it to find, by reading files the pull request never touches:
+While it runs, switch to the browser and request a Copilot review on the same
+pull request from the reviewers list.
 
-- `"outage"` is accepted but `app/templates/board.html` has no branch for it,
-  so the tile renders blank
-- the write and the read-back duplicate `store.put_incident` and
-  `store.list_incidents`
-- no test was added to `tests/test_api.py`
+Now both are working. Use the wait rather than apologising for it: this is two
+reviewers looking at one change, which is the whole point of the block.
 
-### 5. Ask Copilot to review the same pull request — 4 min
+### 5. Read what came back — 8 min
 
-In the browser, request a review from the reviewers list. Let it run while you
-talk.
+The subagent takes **three to four minutes** and reports **a dozen or more
+findings**. That is measured, not estimated. Do not try to read them all on
+screen.
 
-It should do well on the first group. Its comments arrive graded by severity,
-attached to lines, in the place the team already works.
+**Scroll to the last section, headed "Which findings came from where."** It
+splits every finding into *visible in the diff alone* and *required reading
+files the diff does not touch*, and names those files. That section is the
+demonstration. Everything above it is evidence that the agent earned it.
+
+The findings that need files the pull request never touches:
+
+- **`"outage"` renders nothing.** `app/templates/board.html` has no branch for
+  it and `board.css` has no `.badge-outage`, so the status meaning "this
+  service is gone" produces a tile with no badge — the board looks calmest when
+  things are worst.
+- **`tests/test_validators.py:54` already asserts `"outage"` is invalid.** The
+  repository would hold a test and a route that contradict each other, and CI
+  stays green because the route never calls the validator.
+- **`store.put_incident` already does this job**, correctly and with
+  parameterised values (`app/store.py:107-135`).
+- **`store.py`'s own docstring becomes false** — it says "nothing in this
+  codebase uses PartiQL" — in a file the diff does not touch.
+- **No test was added**, against a convention `tests/test_api.py` states in its
+  own docstring.
+
+Then the diff-visible ones: PartiQL built by string formatting, no error
+handling, a hand-rolled regex where `validators.py` already has one, `boto3`
+imported into a route module, a raw dict returned instead of a model.
+
+**The finding worth saving for last.** The agent has flagged that PartiQL is
+authorised by its own IAM actions — `dynamodb:PartiQLInsert`, `PartiQLUpdate`,
+`PartiQLSelect` — and not by `PutItem`/`UpdateItem`/`Query`. The task role in
+`status-board-infra` grants only the latter, so **this change would fail with
+`AccessDenied` in AWS while every test passes.** The agent could not read that
+repository and said so, offering it as an expectation to confirm rather than a
+fact. It is confirmed: `terraform/iam.tf:36-57`.
+
+That is worth dwelling on. A reviewer reasoned from code it could read to a
+production failure in a repository it could not, and was careful to label the
+difference.
+
+**Copilot** should do well on the diff-visible group, with comments graded by
+severity and attached to lines, in the place the team already works.
 
 ### 6. Compare — 2 min, then discussion
 
@@ -113,4 +149,6 @@ clean. The branch and the pull request stay; nothing is merged.
 | Copilot review is slow | Request it at the start of step 5 and keep talking; it arrives within a minute or two |
 | Generation produces a different agent | Use the copy in this directory, and say you are using a prepared one |
 | The subagent reports nothing from outside the diff | Check `tools:` includes Grep; without it the agent cannot search |
+| The subagent asks for the diff and stops | It has no shell and no GitHub MCP. Paste the diff, or have the main thread fetch it first |
+| The review runs long | Expected. Start it before the Copilot request so both run together |
 | Someone asks whether Copilot could be given the same reach | Good question, and the honest answer is that custom instructions tell it the rules but do not let it open an untouched file |
