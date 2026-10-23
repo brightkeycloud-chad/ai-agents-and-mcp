@@ -36,6 +36,13 @@ cites the line that proves it:
 - [Infrastructure](https://github.com/brightkeycloud-chad/status-board-infra/blob/main/docs/architecture.png)
 - [Application](https://github.com/brightkeycloud-chad/status-board-app/blob/main/docs/architecture.png)
 
+## Sources
+
+Every third-party reference behind this material, with what it establishes and
+when it was checked, is in [SOURCES.md](SOURCES.md). It also lists the two
+claims that have **not** been verified, and the facts that have already changed
+once — read it before putting a number on a slide.
+
 ## Running a demonstration
 
 Each runbook lists its own prerequisites, timings, reset steps and failure
