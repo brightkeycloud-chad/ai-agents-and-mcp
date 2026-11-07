@@ -64,69 +64,49 @@ the time anyone arrives, and a timestamp two minutes old undercuts it.
 - [ ] The intended-state diagram open in a tab, ready to show
 - [ ] A browser tab signed in to GitHub
 
-### Get down to two MCP servers
+### Installing the AWS MCP server
 
-This half claims two servers and no more. Check what is actually connected
-before you say it:
-
-```bash
-claude mcp list
-```
-
-A development machine accumulates them. On the machine this was built on there
-were **ten**, including four AWS-related ones from plugins. Running the
-demonstration in that state contradicts the point out loud, and anyone who
-opens `/mcp` on your screen will see it.
-
-Turn off everything the half does not need:
+The AWS MCP comes from the **`aws-core` plugin**, not from a hand-written
+server definition. Installing the plugin installs the server:
 
 ```bash
-claude plugin disable aws-core@claude-plugins-official
-claude plugin disable deploy-on-aws@claude-plugins-official
+claude plugin install aws-core@claude-plugins-official
 ```
 
-Disable any other project-scoped servers through `/mcp`. You want exactly two
-left: **github** and one AWS server.
-
-### Connecting the AWS MCP as the read-only role
-
-**The profile alone is not enough.** The AWS MCP server inherits whatever
-credentials the process has, and by default that is your own identity — on this
-machine, an administrator. An agent connected that way can revoke and restore
-security group rules, whatever you tell the audience. The scoping has to be on
-the server, not just available in a config file.
-
-Add a project-scoped server with the profile pinned, in the directory you run
-the demonstration from:
-
-```json
-{
-  "mcpServers": {
-    "aws": {
-      "command": "uvx",
-      "args": [
-        "mcp-proxy-for-aws@1.6.4",
-        "https://aws-mcp.us-east-1.api.aws/mcp",
-        "--skip-auth"
-      ],
-      "env": { "AWS_PROFILE": "status-board-agent" }
-    }
-  }
-}
-```
-
-Then **prove it on screen** as the first thing you do, rather than asserting
-it:
+Behind that, the plugin runs AWS's managed MCP endpoint through a local proxy:
 
 ```
-Which AWS identity are you using?
+uvx mcp-proxy-for-aws@<version> https://aws-mcp.us-east-1.api.aws/mcp --skip-auth
 ```
 
-It should answer `assumed-role/demo-status-board-agent/...`. If it says
-`user/<your-name>`, the plugin server is still connected and the agent is not
-scoped at all.
+One endpoint, authenticated with IAM rather than a browser login, covering
+CloudTrail and the AWS Config advanced query engine — which is why it was
+chosen over wiring up several service-specific servers. Several servers would
+also contradict the point this half is making.
 
-The profile itself is already in `~/.aws/config` on the demonstration machine:
+**Check the version before a delivery.** The plugin pins the proxy, and the
+pin lags: on 2026-11-07 the plugin shipped `1.6.4` while PyPI was on `1.8.0`.
+
+```bash
+claude plugin update aws-core@claude-plugins-official   # restart to apply
+```
+
+### Scoping it to the read-only role
+
+The server inherits whatever credentials the process has. By default that is
+your own identity — on a build machine, usually an administrator. An agent
+connected that way can revoke and restore security group rules no matter what
+you tell the audience, so this is not optional.
+
+**Launch Claude Code with the profile set.** MCP servers are spawned as child
+processes and inherit the environment, so this scopes the plugin's server
+without duplicating any configuration:
+
+```bash
+AWS_PROFILE=status-board-agent claude
+```
+
+The profile is already in `~/.aws/config` on the demonstration machine:
 
 ```ini
 [profile status-board-agent]
@@ -137,20 +117,49 @@ output         = json
 ```
 
 The role's maximum session is one hour, which is shorter than the course. That
-is fine: with `role_arn` and `source_profile` the CLI and SDK re-assume
-automatically, so a two-hour session does not need handling.
+is fine: with `role_arn` and `source_profile` the SDK re-assumes
+automatically.
 
-Check it is scoped as intended before the session:
+**Prove it on screen** as your first action, rather than asserting it:
 
-```bash
-AWS_PROFILE=status-board-agent aws sts get-caller-identity          # assumed-role/demo-status-board-agent
-AWS_PROFILE=status-board-agent aws ec2 describe-security-groups --max-items 1 >/dev/null && echo "read: ok"
-AWS_PROFILE=status-board-agent aws ec2 revoke-security-group-ingress \
-  --group-id sg-xxxx --protocol tcp --port 8080 --cidr 10.0.0.0/8      # expect an explicit deny
+```
+Which AWS identity are you using?
 ```
 
-That last command should fail with **"with an explicit deny in an
-identity-based policy"**. Keep it in your scrollback — it is worth showing.
+It should answer `assumed-role/demo-status-board-agent/...`. If it answers
+`user/<your-name>`, the variable did not reach the server and the agent is not
+scoped at all. Stop and fix that before going further — the whole half rests
+on it.
+
+Keep the explicit denial in your scrollback too; it is worth showing:
+
+```bash
+AWS_PROFILE=status-board-agent aws ec2 authorize-security-group-ingress \
+  --group-id <the-task-sg> --protocol tcp --port 8080 --cidr 10.99.99.99/32
+# UnauthorizedOperation ... with an explicit deny in an identity-based policy
+```
+
+### Get down to two MCP servers
+
+This half claims two servers and no more. Check what is actually connected
+before you say it:
+
+```bash
+claude mcp list
+```
+
+A development machine accumulates them. On the machine this was built there
+were **ten**, four of them AWS-related, which contradicts the point out loud —
+and anyone who opens `/mcp` on your screen will see it.
+
+Turn off everything the half does not need, keeping `aws-core` and `github`:
+
+```bash
+claude plugin disable deploy-on-aws@claude-plugins-official
+```
+
+Disable any other project-scoped servers through `/mcp`. You want exactly two
+left: **github** and **aws-core's aws-mcp**.
 
 ## Running it
 

@@ -89,6 +89,12 @@ input names, so the major bump needs no migration. Checked 2026-09-26.
 | <https://raw.githubusercontent.com/github/github-mcp-server/main/README.md> | The full toolset list. Defaults when none are specified: `context, repos, issues, pull_requests, users`. Workflow runs and job logs come from the **`actions`** toolset; `request_copilot_review` comes from the **`copilot`** toolset. Neither is on by default. | 2026-09-26 |
 | <https://raw.githubusercontent.com/github/github-mcp-server/main/docs/remote-server.md> | The hosted server selects toolsets by URL path (`/mcp/x/<toolset>`) or by the `X-MCP-Toolsets` header, comma-separated. | 2026-09-26 |
 
+## AWS MCP server
+
+| Source | Establishes | Checked |
+|---|---|---|
+| <https://pypi.org/project/mcp-proxy-for-aws/> | The local proxy the `aws-core` plugin runs against AWS's managed MCP endpoint. Latest was **1.8.0**, released 2026-11-03, while the plugin pinned **1.6.4** — the plugin's pin lags, so check before a delivery. | 2026-11-07 |
+
 ## Archify
 
 | Source | Establishes | Checked |
