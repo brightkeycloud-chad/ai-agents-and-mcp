@@ -8,7 +8,8 @@ different things, and knowing which is which tells you what to use each for.
 
 ## Before the session
 
-- [ ] GitHub MCP server connected, with the `copilot` and `repos` toolsets
+- [ ] A GitHub account with the repositories accessible, and a browser signed in to it
+- [ ] If demonstrating the install: `claude mcp remove github` beforehand, so step 1 has something to do
 - [ ] A Copilot plan that includes code review (Pro, Pro+, Business, Enterprise or Max)
 - [ ] `status-board-app` cloned and open in VS Code
 - [ ] On `main`, with **no** `.claude/agents/` directory — you build that live
@@ -21,16 +22,54 @@ No AWS resources are needed. The stack can stay destroyed.
 
 ### 1. Connect the GitHub MCP server — 3 min
 
-From the terminal, not by editing a file. Show that it is one command and that
-credentials are handled by the authorisation flow.
+From the terminal, not by editing a file. One command, and the point lands by
+itself.
 
-Point out that the server ships more toolsets than you enabled. Every tool you
-turn on costs context before you type a word, so you enable what the work needs
-and leave the rest off. That is slide 22 arriving early, which is fine.
+```bash
+claude mcp add --transport http github https://api.githubcopilot.com/mcp \
+  --header "X-MCP-Toolsets: context,repos,issues,pull_requests,users,actions,copilot"
+```
+
+Claude Code prompts for authorisation on first use and opens a browser. Nothing
+is pasted on screen and no token appears in the configuration.
+
+Check it connected:
+
+```bash
+claude mcp list
+```
+
+**The part worth saying out loud.** The bare `/mcp` endpoint serves a *default*
+toolset — `context, repos, issues, pull_requests, users` — and nothing else.
+Two of the toolsets in the command above are off by default and both are needed
+here: `actions` reads workflow runs and job logs, and `copilot` is what
+requests a Copilot review on a pull request.
+
+The server also ships `code_security`, `dependabot`, `discussions`, `gists`,
+`notifications`, `projects`, `stargazers` and more. None are enabled, because
+every tool you turn on spends context before you type a word. That is slide 22
+arriving early, demonstrated rather than asserted.
+
+**Already connected from a previous run?** Remove it first so the audience sees
+the command work:
+
+```bash
+claude mcp remove github
+```
+
+**If the authorisation flow stalls**, a personal access token works instead —
+add a second `--header "Authorization: Bearer $GITHUB_TOKEN"`. Prepare the
+token beforehand and export it; do not type it on screen.
 
 ### 2. Show `AGENTS.md` — 2 min
 
-Open it in the repo. Five house rules, written once, read by every agent.
+Open [`AGENTS.md`](https://github.com/brightkeycloud-chad/status-board-app/blob/main/AGENTS.md)
+in the application repository. Five house rules, written once, read by every
+agent that works here. Scroll to the Conventions section — rules 1 and 2 are
+the ones the pull request breaks.
+
+The infrastructure repository has its own, with different rules for Terraform.
+Same idea, different domain: the standard lives beside the code it governs.
 
 Say plainly that **Copilot reads this file too**. The comparison coming up is
 not about one reviewer knowing the rules and the other not.
@@ -152,3 +191,5 @@ clean. The branch and the pull request stay; nothing is merged.
 | The subagent asks for the diff and stops | It has no shell and no GitHub MCP. Paste the diff, or have the main thread fetch it first |
 | The review runs long | Expected. Start it before the Copilot request so both run together |
 | Someone asks whether Copilot could be given the same reach | Good question, and the honest answer is that custom instructions tell it the rules but do not let it open an untouched file |
+| `claude mcp add` reports the server as failed | Run `claude mcp list` to see the error. Most often the browser authorisation was dismissed; `claude mcp remove github` and run the add again |
+| The Copilot review option is missing from the reviewers list | The `copilot` toolset is not what puts it there — that is the GitHub UI, and it needs a Copilot plan on the account that owns the repository |
