@@ -18,8 +18,8 @@ in their own repositories.
 
 | | What happens | Status |
 |---|---|---|
-| [Development](demos/01-development/RUNBOOK.md) | Build a scoped, read-only review agent and point it at a real pull request, then ask GitHub Copilot to review the same one | Ready |
-| DevOps | Infrastructure that worked yesterday is broken. An agent investigates with CloudTrail and AWS Config, correlates the change to a merged pull request, and proposes a revert | Being built |
+| [Development](demos/01-development/RUNBOOK.md) | Build a scoped, read-only review agent and point it at a real pull request, then ask GitHub Copilot to review the same one | Ready, rehearsed |
+| [DevOps](demos/02-devops/RUNBOOK.md) | Infrastructure that worked yesterday is broken. An agent investigates with CloudTrail and AWS Config, correlates the change to a merged pull request, and proposes a revert | Written, needs one rehearsal |
 
 Both halves use the same system, so the second half investigates an
 application the audience has already read the code for.
