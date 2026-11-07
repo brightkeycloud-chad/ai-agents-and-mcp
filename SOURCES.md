@@ -17,9 +17,12 @@ already changed once.
 | <https://docs.github.com/en/copilot/concepts/agents/code-review> | Copilot "reviews your code written in any language" — there is **no fixed language list**. Billing is AI-credit based: Lite $0.05–$1, Balanced $0.25–$5 per review. Automatic reviews bill the pull request author; manual reviews bill the requester. Included in Pro, Pro+, Business, Enterprise and Max; not in Free. | 2026-09-17 |
 | <https://docs.github.com/en/copilot/how-tos/use-copilot-agents/request-a-code-review/configure-coding-guidelines> | Copilot code review **reads repository custom instructions by default**, including `.github/copilot-instructions.md`, `.github/instructions/*.instructions.md`, and agent instructions in `AGENTS.md`, `CLAUDE.md` or `GEMINI.md` — taken from the **head branch**. Nothing indicates it can read files outside the pull request beyond those instruction files. | 2026-09-17 |
 
-Both matter for the development half. The comparison is **not** that one
-reviewer knows the house rules and the other does not — they both read
-`AGENTS.md`. It is that one can open a file the pull request never touched.
+> **Superseded by observation, 2026-11-07.** A Copilot review on this course's
+> own pull request named `VALID_STATUSES` by identifier and listed the three
+> statuses `app/templates/board.html` renders. Neither appears in the diff nor
+> in `AGENTS.md`. **Copilot code review now reads files outside the pull
+> request**, whatever the documentation above implies. Do not claim otherwise
+> on a slide.
 
 ## Terraform and the AWS provider
 
@@ -124,3 +127,7 @@ Evidence that this file needs re-checking rather than trusting:
 - GitHub's OIDC subject claim now embeds immutable numeric owner and repository
   ids, so a trust policy matching the plain `owner/repo` form fails. Discovered
   by reading failed `AssumeRoleWithWebIdentity` events in CloudTrail.
+- **Copilot code review gained the ability to read beyond the diff**, somewhere
+  between 2026-09-17 and 2026-11-07. The documentation did not announce it; it
+  was caught by watching an actual review. An entire demonstration had been
+  built on the previous behaviour.

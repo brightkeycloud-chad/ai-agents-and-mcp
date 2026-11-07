@@ -13,7 +13,7 @@ different things, and knowing which is which tells you what to use each for.
 - [ ] A Copilot plan that includes code review (Pro, Pro+, Business, Enterprise or Max)
 - [ ] `status-board-app` cloned and open in VS Code
 - [ ] On `main`, with **no** `.claude/agents/` directory — you build that live
-- [ ] [PR #1](https://github.com/brightkeycloud-chad/status-board-app/pull/1) open, CI green, **no review yet**
+- [ ] the open pull request on `feat/post-incidents` open, CI green, **no review yet**
 - [ ] A browser tab already signed in to GitHub
 
 No AWS resources are needed. The stack can stay destroyed.
@@ -98,7 +98,7 @@ known-good copy. Copy it to `.claude/agents/` and carry on.
 **Run them at the same time.** Neither is instant, and waiting for one before
 starting the other spends minutes you do not have.
 
-Ask Claude Code to review PR #1 with the subagent. It reaches the pull request
+Ask Claude Code to review the open pull request with the subagent. It reaches the pull request
 through the GitHub MCP. The subagent itself has only Read, Grep and Glob, so it
 cannot fetch the diff — the main thread hands it over. Say that out loud; it is
 the scoping made visible.
@@ -113,73 +113,108 @@ reviewers looking at one change, which is the whole point of the block.
 
 The subagent takes **three to four minutes** and reports **a dozen or more
 findings**. That is measured, not estimated. Do not try to read them all on
-screen.
+screen — scroll to its last section, headed "Which findings came from where."
 
-**Scroll to the last section, headed "Which findings came from where."** It
-splits every finding into *visible in the diff alone* and *required reading
-files the diff does not touch*, and names those files. That section is the
-demonstration. Everything above it is evidence that the agent earned it.
+**Copilot returns about ten findings**, graded by severity and attached to
+lines.
 
-The findings that need files the pull request never touches:
+#### Read this before the session
 
-- **`"outage"` renders nothing.** `app/templates/board.html` has no branch for
-  it and `board.css` has no `.badge-outage`, so the status meaning "this
-  service is gone" produces a tile with no badge — the board looks calmest when
-  things are worst.
-- **`tests/test_validators.py:54` already asserts `"outage"` is invalid.** The
+**Copilot code review reads files the pull request does not touch.** Measured
+on 2026-11-07: it named `VALID_STATUSES` by identifier and listed the three
+statuses `board.html` renders, neither of which appears in the diff or in
+`AGENTS.md`. In September the documentation gave no indication it could do
+this. It can now.
+
+So **do not claim Copilot only sees the diff.** It found the blank-tile bug and
+the missing test, both of which earlier drafts of this runbook promised it
+would miss. Someone in the room will have read the same documentation you did,
+and the claim is checkable in front of them.
+
+#### What each one actually found
+
+Both found, and Copilot graded them well: PartiQL built by string formatting,
+no transactional guarantee across the three writes, no service-existence check,
+validation not going through the shared validators, DynamoDB reached outside
+the storage layer, an unpaginated count, no response model, no tests, and the
+`outage` status rendering without a badge.
+
+The subagent additionally found, and Copilot did not:
+
+- **PartiQL is authorised by its own IAM actions** — `dynamodb:PartiQLInsert`,
+  `PartiQLUpdate`, `PartiQLSelect` — and the task role grants only
+  `PutItem`/`UpdateItem`/`Query`. **This change would fail with `AccessDenied`
+  in AWS while every test passed.** The agent reasoned that about
+  `status-board-infra`, a repository it could not read, and said so rather than
+  asserting it.
+- **The new client ignores `DYNAMODB_ENDPOINT_URL`**, so under `docker compose`
+  this one route talks to real AWS while every other route talks to the local
+  database.
+- **`tests/test_validators.py:54` already asserts `outage` is invalid.** The
   repository would hold a test and a route that contradict each other, and CI
   stays green because the route never calls the validator.
-- **`store.put_incident` already does this job**, correctly and with
-  parameterised values (`app/store.py:107-135`).
 - **`store.py`'s own docstring becomes false** — it says "nothing in this
-  codebase uses PartiQL" — in a file the diff does not touch.
-- **No test was added**, against a convention `tests/test_api.py` states in its
-  own docstring.
-
-Then the diff-visible ones: PartiQL built by string formatting, no error
-handling, a hand-rolled regex where `validators.py` already has one, `boto3`
-imported into a route module, a raw dict returned instead of a model.
-
-**The finding worth saving for last.** The agent has flagged that PartiQL is
-authorised by its own IAM actions — `dynamodb:PartiQLInsert`, `PartiQLUpdate`,
-`PartiQLSelect` — and not by `PutItem`/`UpdateItem`/`Query`. The task role in
-`status-board-infra` grants only the latter, so **this change would fail with
-`AccessDenied` in AWS while every test passes.** The agent could not read that
-repository and said so, offering it as an expectation to confirm rather than a
-fact. It is confirmed: `terraform/iam.tf:36-57`.
-
-That is worth dwelling on. A reviewer reasoned from code it could read to a
-production failure in a repository it could not, and was careful to label the
-difference.
-
-**Copilot** should do well on the diff-visible group, with comments graded by
-severity and attached to lines, in the place the team already works.
+  codebase uses PartiQL" — in a file the diff never touches.
+- **The committed architecture diagram goes stale**, and because its candidate
+  pins an old commit the renderer keeps validating happily.
 
 ### 6. Compare — 2 min, then discussion
 
-Put the two side by side. The honest reading:
+Put them side by side. The honest reading:
 
-> Copilot read the same `AGENTS.md` my agent did. It caught the injection and
-> the convention break. What it could not do is open `board.html`, a file this
-> pull request never touches, and notice the new status has nowhere to render.
-> That is not a smarter model. That is access.
+> Copilot reviewed the change. It did that well, and it reached further than
+> its own documentation said it would. What it did not do is work out that this
+> code cannot run in our account at all, because PartiQL needs IAM permissions
+> our task role does not grant — and it could not, because that lives in
+> another repository. My agent reasoned its way there and then told me it was
+> not certain. That is the difference worth paying for: not more findings, but
+> knowing where the edge of its knowledge is.
+
+Two things worth saying plainly:
+
+**The product changed while this course was being built.** In September,
+Copilot code review could not read past the diff. By November it could. The
+comparison in an earlier draft of this material was true when written and false
+three weeks later. That is slide 33 arriving early and unprompted — the
+products will change, and the principles are what you keep.
+
+**Neither reviewer is the answer.** One runs on your machine, scoped by you,
+and can be pointed at anything you can read. The other runs on GitHub, needs no
+setup from anyone, and arrives in the place the team already works. Most teams
+end up wanting both.
 
 Then the closing question: **an agent you own, or a service you switch on?**
 
-The answer is usually both, for different jobs. One runs on your machine,
-scoped by you, reading whatever you allow. The other runs on GitHub, sees the
-diff plus your instruction files, and needs no setup from anyone.
-
 ## Resetting between runs
+
+Copilot review comments accumulate and cannot be deleted from a pull request,
+so each rehearsal gets a fresh one. GitHub does not allow deleting a pull
+request at all — only closing it — so the old one stays in the list, closed.
 
 ```bash
 cd status-board-app
+
+# 1. Retire the reviewed pull request and recreate the branch untouched.
+PR=$(gh pr list --head feat/post-incidents --json number --jq '.[0].number')
+gh pr close "$PR"
+git push origin --delete feat/post-incidents
+git push origin d85e10f:refs/heads/feat/post-incidents
+
+# 2. Open a clean one.
+gh pr create --base main --head feat/post-incidents \
+  --title "Allow posting incident updates" \
+  --body-file ../ai-agents-and-mcp/demos/01-development/pr-body.md
+
+# 3. Undo anything built live.
 git checkout main
-rm -rf .claude/agents          # if you committed it live, revert that commit too
+rm -rf .claude/agents
 ```
 
-On the pull request, dismiss or delete the Copilot review so the next run starts
-clean. The branch and the pull request stay; nothing is merged.
+`d85e10f` is the commit carrying the planted change; it never moves. If you
+committed the subagent during step 3, revert that commit too.
+
+Check before the next run: the pull request shows **0 reviews, 0 comments**,
+CI is green, and the branch contains no `.claude/`.
 
 ## Things that can go wrong
 
