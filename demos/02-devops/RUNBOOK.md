@@ -57,17 +57,76 @@ the time anyone arrives, and a timestamp two minutes old undercuts it.
 ### Checklist
 
 - [ ] Stack deployed, application deployed, board seeded
-- [ ] Breaking change merged, pipeline applied it, board returns 503
+- [ ] Breaking change merged, pipeline applied it, board hangs then returns 504
 - [ ] At least 30 minutes elapsed since the merge
 - [ ] AWS MCP connected **as the read-only agent role** (profile already configured; see below)
 - [ ] GitHub MCP still connected from the first half
 - [ ] The intended-state diagram open in a tab, ready to show
 - [ ] A browser tab signed in to GitHub
 
+### Get down to two MCP servers
+
+This half claims two servers and no more. Check what is actually connected
+before you say it:
+
+```bash
+claude mcp list
+```
+
+A development machine accumulates them. On the machine this was built on there
+were **ten**, including four AWS-related ones from plugins. Running the
+demonstration in that state contradicts the point out loud, and anyone who
+opens `/mcp` on your screen will see it.
+
+Turn off everything the half does not need:
+
+```bash
+claude plugin disable aws-core@claude-plugins-official
+claude plugin disable deploy-on-aws@claude-plugins-official
+```
+
+Disable any other project-scoped servers through `/mcp`. You want exactly two
+left: **github** and one AWS server.
+
 ### Connecting the AWS MCP as the read-only role
 
-The agent must not be able to fix anything. The profile is already in
-`~/.aws/config` on the demonstration machine:
+**The profile alone is not enough.** The AWS MCP server inherits whatever
+credentials the process has, and by default that is your own identity — on this
+machine, an administrator. An agent connected that way can revoke and restore
+security group rules, whatever you tell the audience. The scoping has to be on
+the server, not just available in a config file.
+
+Add a project-scoped server with the profile pinned, in the directory you run
+the demonstration from:
+
+```json
+{
+  "mcpServers": {
+    "aws": {
+      "command": "uvx",
+      "args": [
+        "mcp-proxy-for-aws@1.6.4",
+        "https://aws-mcp.us-east-1.api.aws/mcp",
+        "--skip-auth"
+      ],
+      "env": { "AWS_PROFILE": "status-board-agent" }
+    }
+  }
+}
+```
+
+Then **prove it on screen** as the first thing you do, rather than asserting
+it:
+
+```
+Which AWS identity are you using?
+```
+
+It should answer `assumed-role/demo-status-board-agent/...`. If it says
+`user/<your-name>`, the plugin server is still connected and the agent is not
+scoped at all.
+
+The profile itself is already in `~/.aws/config` on the demonstration machine:
 
 ```ini
 [profile status-board-agent]
@@ -138,8 +197,8 @@ timestamp, and it is better coming from you.
 
 Give it the symptom, not the answer:
 
-> The status board at https://status.awsf.brightkey.cloud is returning 503. It
-> was working yesterday. Use CloudTrail and AWS Config to work out what
+> The status board at https://status.awsf.brightkey.cloud hangs for about ten
+> seconds and then returns 504. It was working yesterday. Use CloudTrail and AWS Config to work out what
 > changed, when, and who changed it. You have read-only access.
 
 What it finds, in roughly this order. All of it is real output from the run on
@@ -260,7 +319,7 @@ watch the board come back.
 
 > **Use MCPs and agents, or just let the model figure it out?**
 
-Worth having an answer ready. The model alone could have told you what a 503
+Worth having an answer ready. The model alone could have told you what a 504
 behind a load balancer usually means. What it could not do is tell you that
 *this* security group changed at *that* minute because of *that* pull request.
 The MCP servers are not making the model smarter; they are giving it facts
@@ -324,6 +383,16 @@ Also confirmed:
 - **The failure mode is 504 after a ten-second hang**, with target health
   reading `Target.Timeout`. Not the 503 an earlier draft of this runbook
   predicted.
+
+Also found while preparing, and worth knowing:
+
+- **The AWS MCP from the `aws-core` plugin runs as whatever identity the
+  process has** — here, an administrator. It has no `env` block, so the
+  read-only profile in `~/.aws/config` does nothing on its own. Verified that
+  `AWS_PROFILE=status-board-agent` does scope botocore correctly: it assumes
+  the role and the write is denied. The server has to carry that variable.
+- **Ten MCP servers were connected** on the build machine, four of them
+  AWS-related, against a course that says never more than two.
 
 Still unobserved: the agent's own investigation of this evidence, end to end,
 and the Copilot review of the revert. Both are worth one rehearsal.
