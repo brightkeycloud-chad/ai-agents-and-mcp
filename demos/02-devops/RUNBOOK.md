@@ -59,23 +59,27 @@ the time anyone arrives, and a timestamp two minutes old undercuts it.
 - [ ] Stack deployed, application deployed, board seeded
 - [ ] Breaking change merged, pipeline applied it, board returns 503
 - [ ] At least 30 minutes elapsed since the merge
-- [ ] AWS MCP connected **as the read-only agent role** (see below)
+- [ ] AWS MCP connected **as the read-only agent role** (profile already configured; see below)
 - [ ] GitHub MCP still connected from the first half
 - [ ] The intended-state diagram open in a tab, ready to show
 - [ ] A browser tab signed in to GitHub
 
 ### Connecting the AWS MCP as the read-only role
 
-The agent must not be able to fix anything. Add a profile that assumes the
-read-only role:
+The agent must not be able to fix anything. The profile is already in
+`~/.aws/config` on the demonstration machine:
 
 ```ini
-# ~/.aws/config
 [profile status-board-agent]
 role_arn       = arn:aws:iam::997075698610:role/demo-status-board-agent
 source_profile = default
 region         = us-east-1
+output         = json
 ```
+
+The role's maximum session is one hour, which is shorter than the course. That
+is fine: with `role_arn` and `source_profile` the CLI and SDK re-assume
+automatically, so a two-hour session does not need handling.
 
 Check it is scoped as intended before the session:
 
@@ -141,11 +145,17 @@ Give it the symptom, not the answer:
 What it finds, in roughly this order. All of it is real output from the run on
 2026-11-07:
 
-**Target health** names the failure mode precisely:
+**Target health** names the failure mode:
 
 ```
 state  unhealthy    reason  Target.Timeout    "Request timed out"
 ```
+
+**Do not script that reason string.** ECS keeps replacing the task it cannot
+reach, so depending on where in that cycle you look it may read
+`Target.DeregistrationInProgress` or `Target.Timeout`. Both were observed
+within minutes of each other. What is stable is `state: unhealthy` — say that,
+and read whatever reason is on screen.
 
 **AWS Config** gives a clean before and after on the same resource:
 
