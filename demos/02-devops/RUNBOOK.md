@@ -84,11 +84,22 @@ CloudTrail and the AWS Config advanced query engine — which is why it was
 chosen over wiring up several service-specific servers. Several servers would
 also contradict the point this half is making.
 
-**Check the version before a delivery.** The plugin pins the proxy, and the
-pin lags: on 2026-11-07 the plugin shipped `1.6.4` while PyPI was on `1.8.0`.
+**The plugin pins the proxy, and updating the plugin will not move that pin.**
+Checked on 2026-11-07: `aws-core` was already at its latest version, 1.1.0, and
+still pinned proxy `1.6.4` from July, while PyPI was on `1.8.0`.
+
+That gap is not only cosmetic. Proxy 1.8.0 resolves three dependency CVEs
+(`CVE-2026-114605`, `GHSA-7xgj-8392-5q4r`, `CVE-2026-114603`) and enforces
+HTTPS in the SigV4 transport.
+
+For the demonstration itself, 1.6.4 is fine and is what everything here was
+verified against — it already enforces read-only mode on tool calls. If you
+would rather not run a pinned-old proxy on a machine that also does real AWS
+work, override it: disable the plugin's server and define your own pinning a
+current version. You then own the version, which is the trade.
 
 ```bash
-claude plugin update aws-core@claude-plugins-official   # restart to apply
+claude plugin update aws-core@claude-plugins-official   # confirms, does not move the pin
 ```
 
 ### Scoping it to the read-only role

@@ -93,7 +93,8 @@ input names, so the major bump needs no migration. Checked 2026-09-26.
 
 | Source | Establishes | Checked |
 |---|---|---|
-| <https://pypi.org/project/mcp-proxy-for-aws/> | The local proxy the `aws-core` plugin runs against AWS's managed MCP endpoint. Latest was **1.8.0**, released 2026-11-03, while the plugin pinned **1.6.4** — the plugin's pin lags, so check before a delivery. | 2026-11-07 |
+| <https://pypi.org/project/mcp-proxy-for-aws/> | The local proxy the `aws-core` plugin runs against AWS's managed MCP endpoint. Latest **1.8.0** (2026-11-03); the plugin pins **1.6.4** (2026-07-20) and was already at its own latest version, so updating the plugin does not move the pin. | 2026-11-07 |
+| <https://github.com/aws/mcp-proxy-for-aws/blob/main/CHANGELOG.md> | Proxy 1.8.0 resolves `CVE-2026-114605`, `GHSA-7xgj-8392-5q4r` and `CVE-2026-114603` via dependency upgrades, and enforces HTTPS in the SigV4 transport. 1.6.4 already enforces read-only mode on `tools/call`. | 2026-11-07 |
 
 ## Archify
 
