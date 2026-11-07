@@ -6,10 +6,9 @@ Infrastructure that worked yesterday is broken this morning. Nobody watched it
 happen. An agent with read-only access to the account finds the change, names
 the person — or the pipeline — that made it, and proposes the fix.
 
-> ⚠️ **Rehearse this once before delivering it.** The pieces are verified
-> individually (see *What has been checked*, at the end) but the full sequence
-> with the break applied has not yet been run end to end. The agent's exact
-> output is not predictable the way the first half's is.
+> The break has been run end to end against the live account. Everything below
+> that describes what the evidence looks like is observed, not expected — see
+> *What has been checked* at the end for the measurements.
 
 ## Before the session
 
@@ -43,13 +42,17 @@ authorised, applied correctly by automation, and still wrong.
 Wait for the apply to finish, then confirm the break took:
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' https://status.awsf.brightkey.cloud/   # expect 503
+curl -s -m 30 -o /dev/null -w '%{http_code}\n' https://status.awsf.brightkey.cloud/   # expect 504
 ```
 
-**Leave at least 30 minutes between the merge and the session.** CloudTrail and
-AWS Config both need time to record. Config discovered this account's security
-group within about two minutes of creation, so minutes rather than hours — but
-do not cut it fine.
+**The evidence lands faster than you would think.** Measured end to end: the
+CloudTrail event appeared **30 seconds** after the merge, the board began
+failing at **40 seconds**, AWS Config captured the change at **74 seconds**,
+and the event was queryable through `LookupEvents` within about **90 seconds**.
+
+So five minutes is operationally enough. Leave longer anyway — half an hour,
+or do it the night before — because the story is that the evidence is cold by
+the time anyone arrives, and a timestamp two minutes old undercuts it.
 
 ### Checklist
 
@@ -111,7 +114,14 @@ committed to the repository, so the agent can read it as context too.
 
 ### 3. The symptom — 2 min
 
-Load the board. It returns 503.
+Load the board. **It hangs for about ten seconds, then returns 504.**
+
+Let the hang play out on screen rather than cutting away — the pause is the
+most visceral part of the whole half, and it tells you something a 503 would
+not. A 503 means the load balancer has nothing to send the request to. A 504
+means it found a target, forwarded the request, and waited. Something is
+swallowing packets rather than refusing them, which is what a security group
+does.
 
 Set the scene honestly: the environment worked yesterday, a change merged
 overnight, nobody saw it happen, and the evidence is already cold. That is what
@@ -128,10 +138,38 @@ Give it the symptom, not the answer:
 > was working yesterday. Use CloudTrail and AWS Config to work out what
 > changed, when, and who changed it. You have read-only access.
 
-What to expect it to do, roughly in order: check the load balancer's target
-health and find the target failing, look at the task security group, query
-AWS Config for that group's configuration history to get the before and after,
-then search CloudTrail for the API call that changed it.
+What it finds, in roughly this order. All of it is real output from the run on
+2026-11-07:
+
+**Target health** names the failure mode precisely:
+
+```
+state  unhealthy    reason  Target.Timeout    "Request timed out"
+```
+
+**AWS Config** gives a clean before and after on the same resource:
+
+```
+23:15:45   ingress rules: 0   ports: []        ← after
+22:16:13   ingress rules: 1   ports: [8080]    ← before
+```
+
+**CloudTrail** names the call and who made it:
+
+```
+eventTime      2026-11-07T23:15:01Z
+eventName      RevokeSecurityGroupIngress
+userIdentity   AssumedRole
+arn            .../demo-status-board-tf-deploy/gha-terraform-42424330726
+userAgent      APN/1.0 HashiCorp/1.0 Terraform/1.17.1
+groupId        sg-03a5ad45163aec881
+```
+
+Pause on that `userIdentity`. It is an **assumed role, not a person**, and the
+user agent says Terraform. Nobody logged into the console and clicked
+something. The change was authorised, applied correctly by automation, and
+still wrong — which is the uncomfortable kind of incident, and the common
+kind.
 
 The Config query it is reaching for looks like this, and works through the AWS
 MCP:
@@ -150,17 +188,48 @@ balancer think of its target?" is fair; "look at the security group" is not.
 
 This is the high point of the half. Build toward it.
 
-Once the agent has the CloudTrail event, it has a timestamp and an identity —
-an assumed role, not a person. Ask it to close the loop:
+Look again at the role session name in the CloudTrail event:
+
+```
+arn:aws:sts::997075698610:assumed-role/demo-status-board-tf-deploy/gha-terraform-42424330726
+                                                                   └──────────┬──────────┘
+                                                                   the GitHub Actions run id
+```
+
+The workflow sets `role-session-name: gha-terraform-${{ github.run_id }}`, so
+**AWS is carrying GitHub's run id inside the identity that made the change.**
+This is not timestamp matching. It is an exact key.
+
+Ask the agent to follow it:
 
 > Which pull request caused this?
 
-It reaches GitHub through the MCP connected in the first half, finds the merge
-that fired the pipeline, and names the change.
+It reaches GitHub through the MCP connected in the first half, and the chain
+resolves without ambiguity:
+
+```
+CloudTrail session   gha-terraform-42424330726
+         ↓
+Actions run          42424330726
+         ↓
+commit               7cfcd61
+         ↓
+pull request         #1  "Remove redundant task security group ingress rule"
+```
+
+Then read the pull request body out loud. Its argument is that the rule is
+redundant because the load balancer already has a matching egress rule. That
+is a real misreading of how security groups work — egress on the source does
+not grant ingress on the destination — and it is plausible enough that it got
+merged.
 
 Two MCP servers, one question. Neither could answer it alone: AWS knows what
 happened and when, GitHub knows why and who decided it. The agent is the only
 thing holding both.
+
+**Worth saying:** that session name was set for traceability, not for this. A
+small, cheap convention in a workflow turned a correlation problem into a
+lookup. Those conventions are worth paying for before you need them.
 
 ### 6. Propose the fix, and let Copilot review it — 4 min
 
@@ -215,27 +284,36 @@ rehearsal.
 | Config returns nothing for the security group | Confirm the recorder is on: `aws configservice describe-configuration-recorder-status`. This account records continuously |
 | The agent tries to fix it and fails | That is the demonstration working. Show the explicit denial and move on |
 | The board comes back by itself | It will not — the rule is gone until something restores it. If it does, the merge did not apply; check the workflow run |
+| The board returns 503 rather than 504 | The task has been deregistered, probably because ECS replaced it. Still a valid symptom, but target health reads `no healthy targets` rather than `Target.Timeout` |
 | The agent reaches the answer in 30 seconds | Good. Spend the time saved on the correlation step, which is the part worth dwelling on |
 | Copilot review is slow on the revert | Request it, then run the discussion while it arrives |
 
 ## What has been checked
 
-Verified on 2026-11-07 against the live account:
+Run end to end against the live account on 2026-11-07. Measured from the merge:
 
-- **The AWS MCP can run Config advanced queries.** `SelectResourceConfig`
-  returns the task security group and its `ipPermissions`, including the
-  ingress rule's description.
-- **Config records promptly here.** The security group was discovered about two
-  minutes after creation, with four configuration items inside five minutes.
-  Recording is continuous and account-wide, enabled since 2019.
-- **The agent role is genuinely read-only.** Reads of CloudTrail, Config, EC2
-  and ECS succeed; `RevokeSecurityGroupIngress` and
+| | Elapsed |
+|---|---|
+| CloudTrail recorded `RevokeSecurityGroupIngress` | **30s** |
+| Board began failing | **40s** |
+| Pipeline finished | **65s** |
+| AWS Config captured the new configuration | **74s** |
+| CloudTrail event queryable via `LookupEvents` | **~90s** |
+
+Also confirmed:
+
+- **The AWS MCP can run Config advanced queries**, and `GetResourceConfigHistory`
+  returns a clean before-and-after pair for the security group.
+- **CloudTrail records an assumed role**, not a person, with a Terraform user
+  agent — because the pipeline applied the change.
+- **The role session name carries the GitHub Actions run id**, which resolves
+  to the run, the commit and the pull request with no guessing.
+- **The agent role is genuinely read-only.** `RevokeSecurityGroupIngress` and
   `AuthorizeSecurityGroupIngress` against a real security group both fail with
   "explicit deny in an identity-based policy".
-- **The breaking change is staged** as
-  [status-board-infra#1](https://github.com/brightkeycloud-chad/status-board-infra/pull/1)
-  and `terraform validate` passes. It removes exactly one resource.
+- **The failure mode is 504 after a ten-second hang**, with target health
+  reading `Target.Timeout`. Not the 503 an earlier draft of this runbook
+  predicted.
 
-Not yet observed, and the reason to rehearse: the CloudTrail event the pipeline
-produces when it applies the removal, the before-and-after pair Config captures
-for it, and how long the board takes to start returning 503.
+Still unobserved: the agent's own investigation of this evidence, end to end,
+and the Copilot review of the revert. Both are worth one rehearsal.
