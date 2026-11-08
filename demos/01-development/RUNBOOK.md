@@ -10,7 +10,7 @@ different things, and knowing which is which tells you what to use each for.
 
 - [ ] The environment is up, following the [environment runbook](../00-environment/RUNBOOK.md)
 - [ ] A GitHub account with the repositories accessible, and a browser signed in to it
-- [ ] If demonstrating the install: `claude mcp remove github` beforehand, so step 1 has something to do
+- [ ] `gh auth status` shows you signed in, because step 1 takes its token from `gh`
 - [ ] A Copilot plan that includes code review (Pro, Pro+, Business, Enterprise or Max)
 - [ ] `status-board-app` cloned and open in VS Code
 - [ ] On `main`, with **no** `.claude/agents/` directory — you build that live
@@ -28,22 +28,34 @@ has already been merged, the board returns 504.
 
 ### 1. Connect the GitHub MCP server — 3 min
 
-From the terminal, not by editing a file. One command, and the point lands by
-itself.
+From the terminal, not by editing a file. Run this before starting `claude`, and
+**in `status-board-app`**. These entries belong to the directory you run them
+from, so running `remove` anywhere else removes a different connection.
 
 ```bash
+cd ~/Work/github/status-board-app
+claude mcp remove github
+export GITHUB_TOKEN=$(gh auth token)
 claude mcp add --transport http github https://api.githubcopilot.com/mcp \
-  --header "X-MCP-Toolsets: context,repos,issues,pull_requests,users,actions,copilot"
-```
-
-Claude Code prompts for authorisation on first use and opens a browser. Nothing
-is pasted on screen and no token appears in the configuration.
-
-Check it connected:
-
-```bash
+  --header "X-MCP-Toolsets: context,repos,issues,pull_requests,users,actions,copilot" \
+  --header "Authorization: Bearer $GITHUB_TOKEN"
 claude mcp list
 ```
+
+Expect `github ... ✔ Connected`. If no entry exists yet, `remove` reports an error
+that you can ignore. If `claude` is already running in this directory, restart it
+to pick up the new entry.
+
+**A token is required.** Without the `Authorization` header there is no browser
+sign-in to fall back on: the connection fails with `Incompatible auth server:
+does not support dynamic client registration`. Observed with Claude Code 2.1.319
+on 2026-11-08.
+
+**What to say about the token.** It comes from `gh` and is never typed on screen,
+but `claude mcp add` saves it in plain text in `~/.claude.json`. Say so if anyone
+asks. `add` redacts it in its own output.
+
+**Do not run `claude mcp get github` on screen. It prints the token in full.**
 
 **The part worth saying out loud.** The bare `/mcp` endpoint serves a *default*
 toolset — `context, repos, issues, pull_requests, users` — and nothing else.
@@ -55,17 +67,6 @@ The server also ships `code_security`, `dependabot`, `discussions`, `gists`,
 `notifications`, `projects`, `stargazers` and more. None are enabled, because
 every tool you turn on spends context before you type a word. That is slide 22
 arriving early, demonstrated rather than asserted.
-
-**Already connected from a previous run?** Remove it first so the audience sees
-the command work:
-
-```bash
-claude mcp remove github
-```
-
-**If the authorisation flow stalls**, a personal access token works instead —
-add a second `--header "Authorization: Bearer $GITHUB_TOKEN"`. Prepare the
-token beforehand and export it; do not type it on screen.
 
 ### 2. Show `AGENTS.md` — 2 min
 
@@ -232,5 +233,6 @@ CI is green, and the branch contains no `.claude/`.
 | The subagent asks for the diff and stops | It has no shell and no GitHub MCP. Paste the diff, or have the main thread fetch it first |
 | The review runs long | Expected. Start it before the Copilot request so both run together |
 | Someone asks whether Copilot could be given the same reach | Good question, and the honest answer is that custom instructions tell it the rules but do not let it open an untouched file |
-| `claude mcp add` reports the server as failed | Run `claude mcp list` to see the error. Most often the browser authorisation was dismissed; `claude mcp remove github` and run the add again |
+| `claude mcp list` shows `Incompatible auth server: does not support dynamic client registration` | The entry has no `Authorization` header. In `status-board-app`, run the step 1 commands again |
+| `claude mcp list` shows another connection failure | Check `gh auth status`, because an empty or expired token cannot connect. Sign in with `gh auth login`, then run the step 1 commands again |
 | The Copilot review option is missing from the reviewers list | The `copilot` toolset is not what puts it there — that is the GitHub UI, and it needs a Copilot plan on the account that owns the repository |
