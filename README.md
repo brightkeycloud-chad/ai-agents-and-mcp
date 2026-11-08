@@ -18,6 +18,7 @@ in their own repositories.
 
 | | What happens | Status |
 |---|---|---|
+| [Environment](demos/00-environment/RUNBOOK.md) | Provision the infrastructure and the application before any demonstration, and tear them down afterwards | Commands not yet run in this form |
 | [Development](demos/01-development/RUNBOOK.md) | Build a scoped, read-only review agent and point it at a real pull request, then ask GitHub Copilot to review the same one | Ready, rehearsed |
 | [DevOps](demos/02-devops/RUNBOOK.md) | Infrastructure that worked yesterday is broken. An agent investigates with CloudTrail and AWS Config, correlates the change to a merged pull request, and proposes a revert | Break verified end to end |
 
@@ -48,16 +49,14 @@ once — read it before putting a number on a slide.
 Each runbook lists its own prerequisites, timings, reset steps and failure
 modes. Read it before the session, not during one.
 
-**The development half needs no AWS resources.** The DevOps half does, and the
-stack costs about **$0.10 per hour** while it exists. Bring it up before a
-rehearsal and tear it down afterwards:
+**The infrastructure and the application must be up before any demonstration
+starts.** Provision them separately, using the
+[environment runbook](demos/00-environment/RUNBOOK.md), which has the commands
+and the checks. If an agent is doing it, use a dedicated conversation that only
+provisions or tears down.
 
-```bash
-# in status-board-infra
-cd terraform && terraform apply        # or run the terraform workflow
-# ... and afterwards, the destroy workflow, or:
-cd terraform && terraform destroy
-```
+The stack costs about **$0.10 per hour** while it exists, so tear it down after
+every rehearsal and delivery, using the same runbook.
 
 ## What this course is not
 

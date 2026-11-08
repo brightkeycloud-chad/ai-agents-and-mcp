@@ -8,6 +8,7 @@ different things, and knowing which is which tells you what to use each for.
 
 ## Before the session
 
+- [ ] The environment is up, following the [environment runbook](../00-environment/RUNBOOK.md)
 - [ ] A GitHub account with the repositories accessible, and a browser signed in to it
 - [ ] If demonstrating the install: `claude mcp remove github` beforehand, so step 1 has something to do
 - [ ] A Copilot plan that includes code review (Pro, Pro+, Business, Enterprise or Max)
@@ -16,7 +17,12 @@ different things, and knowing which is which tells you what to use each for.
 - [ ] the open pull request on `feat/post-incidents` open, CI green, **no review yet**
 - [ ] A browser tab already signed in to GitHub
 
-No AWS resources are needed. The stack can stay destroyed.
+None of the steps below use the stack directly: the review works from the
+repository and the pull request. It still has to be up before this half starts,
+because the course runs on one environment throughout.
+
+**Do not load the live board during this half.** If the DevOps breaking change
+has already been merged, the board returns 504.
 
 ## Running it
 

@@ -17,16 +17,9 @@ work happens before anyone is watching.
 
 ### The day before, or at least an hour ahead
 
-```bash
-# 1. Bring the stack up. About 4 minutes.
-gh workflow run terraform.yml --repo brightkeycloud-chad/status-board-infra
-
-# 2. Deploy the application and seed the board. About 3 minutes.
-gh workflow run deploy.yml --repo brightkeycloud-chad/status-board-app
-
-# 3. Confirm the board is healthy before you break it.
-curl -s -o /dev/null -w '%{http_code}\n' https://status.awsf.brightkey.cloud/healthz   # expect 200
-```
+First bring the environment up with the
+[environment runbook](../00-environment/RUNBOOK.md), and confirm the board is
+healthy before you break it.
 
 Then **merge the breaking change and let the pipeline apply it**:
 
@@ -351,19 +344,17 @@ context on every turn and given the agent more ways to pick the wrong tool.
 ## Resetting between runs
 
 ```bash
-# Put the rule back and rebuild, or tear down entirely.
+# Put the rule back and rebuild.
 cd status-board-infra
 git checkout main && git revert --no-edit <the-merge-sha>   # or re-open the PR
 gh workflow run terraform.yml --repo brightkeycloud-chad/status-board-infra
-
-# Finished for the day — stop the billing.
-gh workflow run destroy.yml --repo brightkeycloud-chad/status-board-infra -f confirm=destroy
 ```
 
 Close any pull request the agent opened, and dismiss the Copilot review on it.
 
-**The stack costs about $0.10 an hour while it exists.** Destroy it after every
-rehearsal.
+**Finished for the day?** Tear the stack down with the
+[environment runbook](../00-environment/RUNBOOK.md). It costs about $0.10 an
+hour while it exists.
 
 ## Things that can go wrong
 
