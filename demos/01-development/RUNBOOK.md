@@ -13,7 +13,7 @@ different things, and knowing which is which tells you what to use each for.
 - [ ] `gh auth status` shows you signed in, because step 1 takes its token from `gh`
 - [ ] A Copilot plan that includes code review (Pro, Pro+, Business, Enterprise or Max)
 - [ ] `status-board-app` cloned and open in VS Code
-- [ ] On `main`, with **no** `.claude/agents/` directory — you build that live
+- [ ] On `main`, with no agent file in `.claude/agents/` — you build that live
 - [ ] the open pull request on `feat/post-incidents` open, CI green, **no review yet**
 - [ ] A browser tab already signed in to GitHub
 
@@ -34,6 +34,7 @@ from, so running `remove` anywhere else removes a different connection.
 
 ```bash
 cd ~/Work/github/status-board-app
+mkdir -p .claude/agents   # must exist before claude starts; see step 3
 claude mcp remove github
 export GITHUB_TOKEN=$(gh auth token)
 claude mcp add --transport http github https://api.githubcopilot.com/mcp \
@@ -96,6 +97,28 @@ It can read the code; it cannot change it. That is the whole of slide 13.
 
 Commit it. A reviewer the team shares is a file in the repository, not a
 setting in somebody's editor.
+
+#### Loading the new agent
+
+There is no reload prompt, and `/agents` does not reload anything. Claude Code
+watches `.claude/agents/` and picks up a new file within a few seconds, but only
+if that directory **existed when the session started**. That is why step 1
+creates it.
+
+Confirm it loaded before moving on:
+
+> Which subagents can you delegate to? Is code-reviewer one of them? Answer from
+> your available subagents, not by reading files.
+
+**If it is not listed, restart.** This keeps the conversation:
+
+```bash
+/exit
+claude --continue
+```
+
+Then ask the same question again. The behaviour above comes from the Claude Code
+documentation. Starting from an empty `.claude/agents/` has not yet been rehearsed.
 
 **If the generation goes sideways:** `code-reviewer.md` in this directory is a
 known-good copy. Copy it to `.claude/agents/` and carry on.
@@ -228,6 +251,7 @@ CI is green, and the branch contains no `.claude/`.
 | Problem | What to do |
 |---|---|
 | Copilot review is slow | Request it at the start of step 5 and keep talking; it arrives within a minute or two |
+| Claude says code-reviewer does not exist, or reviews the change itself | The session started before `.claude/agents/` existed. Run `/exit`, then `claude --continue` |
 | Generation produces a different agent | Use the copy in this directory, and say you are using a prepared one |
 | The subagent reports nothing from outside the diff | Check `tools:` includes Grep; without it the agent cannot search |
 | The subagent asks for the diff and stops | It has no shell and no GitHub MCP. Paste the diff, or have the main thread fetch it first |

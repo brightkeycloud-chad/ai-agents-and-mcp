@@ -80,7 +80,7 @@ input names, so the major bump needs no migration. Checked 2026-09-26.
 
 | Source | Establishes | Checked |
 |---|---|---|
-| <https://code.claude.com/docs/en/sub-agents> | Subagent file format. Required frontmatter is `name` and `description`; `tools` is a comma-separated string or YAML list; project agents live in `.claude/agents/`, user agents in `~/.claude/agents/`. A **restart is required only when creating the first agent file in a new `agents/` directory** — later edits are picked up within seconds. | 2026-10-12 |
+| <https://code.claude.com/docs/en/sub-agents> | Subagent file format. Required frontmatter is `name` and `description`; `tools` is a comma-separated string or YAML list; project agents live in `.claude/agents/`, user agents in `~/.claude/agents/`. A **restart is required only when creating the first agent file in a new `agents/` directory** — later edits are picked up within seconds. `/agents` no longer reloads anything: since v2.1.198 it only prints a reminder. | 2026-11-08 |
 
 ## GitHub MCP server
 
