@@ -24,8 +24,19 @@ healthy before you break it.
 Then **merge the breaking change and let the pipeline apply it**:
 
 ```bash
-gh pr merge 1 --repo brightkeycloud-chad/status-board-infra --squash
+INFRA=brightkeycloud-chad/status-board-infra
+PR=$(gh pr list --repo "$INFRA" --head chore/tighten-task-sg --state open \
+  --limit 1 --json number --jq '.[0].number')
+if [ -n "$PR" ]; then
+  gh pr merge "$PR" --repo "$INFRA" --squash
+else
+  echo "No open pull request. Open one first: see Resetting between runs."
+fi
 ```
+
+This finds the open pull request on the branch rather than naming a number,
+because each run needs a new one. Do not add `--delete-branch`, since the next
+run needs the branch.
 
 That matters more than it looks. A human running `terraform apply` puts their
 own identity in CloudTrail. Merging makes the **pipeline** apply it, so
@@ -299,6 +310,11 @@ commit               7cfcd61
 pull request         #1  "Remove redundant task security group ingress rule"
 ```
 
+**These identifiers are from the 2026-11-07 run.** The run id, the commit and the
+pull request number change on every run, so read what is on screen. Earlier
+pull requests with the same title stay in the history as closed, and the one that
+matters is the one the run id resolves to.
+
 Then read the pull request body out loud. Its argument is that the rule is
 redundant because the load balancer already has a matching egress rule. That
 is a real misreading of how security groups work — egress on the source does
@@ -346,11 +362,21 @@ context on every turn and given the agent more ways to pick the wrong tool.
 ```bash
 # Put the rule back and rebuild.
 cd status-board-infra
-git checkout main && git revert --no-edit <the-merge-sha>   # or re-open the PR
+git checkout main && git revert --no-edit <the-merge-sha>
 gh workflow run terraform.yml --repo brightkeycloud-chad/status-board-infra
 ```
 
 Close any pull request the agent opened, and dismiss the Copilot review on it.
+
+**Open a new pull request for the next run.** A merged pull request cannot be
+reopened, so each run gets its own, from the same branch:
+
+```bash
+gh pr create --repo brightkeycloud-chad/status-board-infra \
+  --base main --head chore/tighten-task-sg \
+  --title "Remove redundant task security group ingress rule" \
+  --body-file ~/Work/github/ai-agents-and-mcp/demos/02-devops/pr-body.md
+```
 
 **Finished for the day?** Tear the stack down with the
 [environment runbook](../00-environment/RUNBOOK.md). It costs about $0.10 an
