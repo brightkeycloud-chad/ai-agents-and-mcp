@@ -221,8 +221,26 @@ Copilot review comments accumulate and cannot be deleted from a pull request,
 so each rehearsal gets a fresh one. GitHub does not allow deleting a pull
 request at all — only closing it — so the old one stays in the list, closed.
 
+**Before you reset:** the reset deletes the agent you built, and the subagent's
+report exists only in that conversation. Save anything you want to keep.
+
+To have the demo conversation do it, enter this:
+
+> Reset this demo for another run by following "Resetting between runs" in
+> ~/Work/github/ai-agents-and-mcp/demos/01-development/RUNBOOK.md. Run its commands
+> as written and change nothing else: do not touch AWS, do not push to main, and
+> leave the GitHub MCP connected. If local main has commits that are not on
+> origin/main, show them to me and ask before removing them. When you finish, run
+> the checks at the end of that section, then tell me the new pull request number
+> and whether each check passed.
+
+Then leave that conversation with `/exit`, and start a new one at step 1 for the
+next run.
+
+To do it by hand:
+
 ```bash
-cd status-board-app
+cd ~/Work/github/status-board-app
 
 # 1. Retire the reviewed pull request and recreate the branch untouched.
 PR=$(gh pr list --head feat/post-incidents --json number --jq '.[0].number')
@@ -241,10 +259,14 @@ rm -rf .claude/agents
 ```
 
 `d85e10f` is the commit carrying the planted change; it never moves. If you
-committed the subagent during step 3, revert that commit too.
+committed the subagent locally during step 3, first confirm with
+`git log origin/main..main` that it is the only local commit, then remove it with
+`git reset --hard origin/main`.
 
-Check before the next run: the pull request shows **0 reviews, 0 comments**,
-CI is green, and the branch contains no `.claude/`.
+Check before the next run: the new pull request shows **0 reviews, 0 comments**,
+CI is green (the test job takes about 30 seconds to start and finish), the branch
+contains no `.claude/`, local `main` matches `origin/main`, and `git status` is
+clean.
 
 ## Things that can go wrong
 
