@@ -222,7 +222,7 @@ timestamp, and it is better coming from you.
 Give it the symptom, not the answer:
 
 > The status board at https://status.awsf.brightkey.cloud hangs for about ten
-> seconds and then returns 504. It was working yesterday. Use CloudTrail and AWS Config to work out what
+> seconds and then returns 504. It was working previously. Use CloudTrail and AWS Config to work out what
 > changed, when, and who changed it. You have read-only access.
 
 What it finds, in roughly this order. All of it is real output from the run on
@@ -359,12 +359,42 @@ context on every turn and given the agent more ways to pick the wrong tool.
 
 ## Resetting between runs
 
+**Take the break out of `main`; do not revert it.** The agent reads the commit
+history, and a revert leaves evidence of the rehearsal. In one run it found a
+revert message calling the removal staged, and told the audience to check whether
+the change was deliberate. A pattern of removed, restored and removed again points
+the same way, even with neutral wording.
+
+**Do this while the stack is up.** The push changes `terraform/`, so it should
+start the apply that restores the rule. With the stack destroyed, that apply would
+rebuild everything and start billing.
+
 ```bash
-# Put the rule back and rebuild.
-cd status-board-infra
-git checkout main && git revert --no-edit <the-merge-sha>
-gh workflow run terraform.yml --repo brightkeycloud-chad/status-board-infra
+cd ~/Work/github/status-board-infra
+git checkout main && git pull --ff-only
+BREAK=$(git log -1 --format=%H --grep='remove redundant task security group' main)
+if [ -n "$BREAK" ]; then
+  git rebase --onto "$BREAK^" "$BREAK" main \
+    && git push --force-with-lease origin main
+else
+  echo "No break found on main. Nothing to remove."
+fi
 ```
+
+This rewrites `main`, and it only runs here because `status-board-infra` is a
+private repository used for this course alone. Commits made after the break are
+kept, with new ids. Then confirm the `terraform` run started and succeeded, and
+that the board returns 200. If no run started, use
+`gh workflow run terraform.yml --repo brightkeycloud-chad/status-board-infra`.
+
+**Keep the rehearsal out of that repository.** No commit message, pull request or
+comment in `status-board-infra` should mention a staged change, a rehearsal or the
+break. Record those here instead.
+
+**What this cannot remove:** GitHub keeps merged pull requests, so earlier ones
+with the same title stay in the list, along with their plan comments. An agent
+that lists them can still see the change was merged before. Say that plainly if it
+comes up.
 
 Close any pull request the agent opened, and dismiss the Copilot review on it.
 
@@ -391,6 +421,7 @@ hour while it exists.
 | The agent tries to fix it and fails | That is the demonstration working. Show the explicit denial and move on |
 | The board comes back by itself | It will not — the rule is gone until something restores it. If it does, the merge did not apply; check the workflow run |
 | The board returns 503 rather than 504 | The task has been deregistered, probably because ECS replaced it. Still a valid symptom, but target health reads `no healthy targets` rather than `Target.Timeout` |
+| The agent says the change may be staged or deliberate | It read that in the history. Check `main` for a leftover revert, using the reset above. If it is citing earlier merged pull requests, acknowledge it and move on to the run id, which is still an exact key |
 | The agent reaches the answer in 30 seconds | Good. Spend the time saved on the correlation step, which is the part worth dwelling on |
 | Copilot review is slow on the revert | Request it, then run the discussion while it arrives |
 
