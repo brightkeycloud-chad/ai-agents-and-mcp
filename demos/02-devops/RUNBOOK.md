@@ -2,7 +2,7 @@
 
 **Budget:** about 22 minutes of demonstration inside a 45-minute block.
 
-Infrastructure that worked yesterday is broken this morning. Nobody watched it
+Infrastructure that was working is now broken. Nobody watched it
 happen. An agent with read-only access to the account finds the change, names
 the person — or the pipeline — that made it, and proposes the fix.
 
@@ -210,8 +210,8 @@ means it found a target, forwarded the request, and waited. Something is
 swallowing packets rather than refusing them, which is what a security group
 does.
 
-Set the scene honestly: the environment worked yesterday, a change merged
-overnight, nobody saw it happen, and the evidence is already cold. That is what
+Set the scene honestly: the environment was working, a change has merged since,
+nobody saw it happen, and the evidence is already cold. That is what
 every real investigation looks like.
 
 **Say that the merge happened before the session.** Someone will notice the
@@ -365,9 +365,10 @@ revert message calling the removal staged, and told the audience to check whethe
 the change was deliberate. A pattern of removed, restored and removed again points
 the same way, even with neutral wording.
 
-**Do this while the stack is up.** The push changes `terraform/`, so it should
-start the apply that restores the rule. With the stack destroyed, that apply would
-rebuild everything and start billing.
+**The push does not restore the rule.** Observed on 2026-11-09: a force push that
+changed `terraform/` started no workflow run, so the board stayed at 504 until an
+apply ran. Run the workflow below if the stack is staying up. If you are tearing it
+down, skip that step, because the next bring-up builds from `main`.
 
 ```bash
 cd ~/Work/github/status-board-infra
@@ -383,9 +384,15 @@ fi
 
 This rewrites `main`, and it only runs here because `status-board-infra` is a
 private repository used for this course alone. Commits made after the break are
-kept, with new ids. Then confirm the `terraform` run started and succeeded, and
-that the board returns 200. If no run started, use
-`gh workflow run terraform.yml --repo brightkeycloud-chad/status-board-infra`.
+kept, with new ids.
+
+To restore the rule on a running stack, run this and wait for it to succeed, then
+confirm the board returns 200. Do not run it with the stack destroyed, because it
+would rebuild everything and start billing.
+
+```bash
+gh workflow run terraform.yml --repo brightkeycloud-chad/status-board-infra
+```
 
 **Keep the rehearsal out of that repository.** No commit message, pull request or
 comment in `status-board-infra` should mention a staged change, a rehearsal or the
