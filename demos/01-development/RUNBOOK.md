@@ -33,6 +33,9 @@ From the terminal, not by editing a file. Run this before starting `claude`, and
 from, so running `remove` anywhere else removes a different connection.
 
 ```bash
+# Sign in to gh first. After a reboot or an expired session, the token is empty.
+gh auth status || gh auth login
+
 cd ~/Work/github/status-board-app
 mkdir -p .claude/agents   # must exist before claude starts; see step 3
 claude mcp remove github
@@ -40,12 +43,27 @@ export GITHUB_TOKEN=$(gh auth token)
 claude mcp add --transport http github https://api.githubcopilot.com/mcp \
   --header "X-MCP-Toolsets: context,repos,issues,pull_requests,users,actions,copilot" \
   --header "Authorization: Bearer $GITHUB_TOKEN"
+unset GITHUB_TOKEN        # the entry already holds it; keep it out of the shell
 claude mcp list
 ```
 
 Expect `github ... ✔ Connected`. If no entry exists yet, `remove` reports an error
-that you can ignore. If `claude` is already running in this directory, restart it
-to pick up the new entry.
+that you can ignore.
+
+Then start Claude Code in the same directory and confirm the connection from
+inside it:
+
+```bash
+claude
+```
+
+```text
+/mcp
+```
+
+`github` should show as connected. If `claude` was already running in this
+directory before you added the entry, `/exit` and start it again so it picks up
+the new entry.
 
 **A token is required.** Without the `Authorization` header there is no browser
 sign-in to fall back on: the connection fails with `Incompatible auth server:
