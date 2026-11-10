@@ -146,10 +146,18 @@ known-good copy. Copy it to `.claude/agents/` and carry on.
 **Run them at the same time.** Neither is instant, and waiting for one before
 starting the other spends minutes you do not have.
 
-Ask Claude Code to review the open pull request with the subagent. It reaches the pull request
-through the GitHub MCP. The subagent itself has only Read, Grep and Glob, so it
-cannot fetch the diff — the main thread hands it over. Say that out loud; it is
-the scoping made visible.
+Ask Claude Code to review the open pull request with the subagent:
+
+> Use the GitHub MCP to find the most recently opened pull request in this
+> repository that is still open. Tell me its number and title, then fetch its
+> diff and hand the diff to the code-reviewer subagent to review. Do not review
+> it yourself, and do not post anything to GitHub. When the subagent finishes,
+> show me its report in full.
+
+The prompt finds the pull request rather than naming a number, because every
+reset opens a new one. It reaches the pull request through the GitHub MCP. The
+subagent itself has only Read, Grep and Glob, so it cannot fetch the diff — the
+main thread hands it over. Say that out loud; it is the scoping made visible.
 
 While it runs, switch to the browser and request a Copilot review on the same
 pull request from the reviewers list.
